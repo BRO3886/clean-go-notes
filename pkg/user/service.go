@@ -9,11 +9,26 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+//Service layer
+type Service interface {
+	Register(user *User) (*User, error)
+	Login(email, password string) (*User, error)
+	GetUserByID(id float64) (*User, error)
+	GetRepo() Repository
+}
+
 type service struct {
 	repo Repository
 }
 
-// func NewService(r Repository) service
+//NewService func
+func NewService(r Repository) Service {
+	return &service{repo: r}
+}
+
+func (s *service) GetRepo() Repository {
+	return s.repo
+}
 
 func (user *User) validate() (bool, error) {
 	if !strings.Contains(user.Email, "@") {
