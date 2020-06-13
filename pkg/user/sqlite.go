@@ -5,15 +5,16 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-//repo
+//sqlite impl
 
 type repo struct {
 	DB *gorm.DB
 }
 
-// func newRepo(db *gorm.DB) Repoistory {
-
-// }
+//NewSqliteRepo is an export for sqlite related impl
+func NewSqliteRepo(db *gorm.DB) Repository {
+	return &repo{DB: db}
+}
 
 func (r *repo) FindByID(id float64) (*User, error) {
 	tx := r.DB.Begin()
@@ -53,4 +54,8 @@ func (r *repo) FindByEmail(email string) (*User, error) {
 	}
 	tx.Commit()
 	return user, nil
+}
+func (r *repo) DoesEmailExist(email string) bool {
+	user := &User{}
+	return r.DB.Where("email=?", email).Find(user).RecordNotFound()
 }
