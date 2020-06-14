@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/BRO3886/clean-go-notes/api/middleware"
 	"github.com/BRO3886/clean-go-notes/pkg/user"
 	"github.com/BRO3886/clean-go-notes/utils"
 	"github.com/badoux/checkmail"
@@ -56,7 +57,7 @@ func regsiter(svc user.Service) http.HandlerFunc {
 			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
 			return
 		}
-
+		user.Password = ""
 		w.WriteHeader(http.StatusCreated)
 		utils.WrapData(w, map[string]interface{}{
 			"message": "account created",
@@ -69,11 +70,65 @@ func regsiter(svc user.Service) http.HandlerFunc {
 
 func login(svc user.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		return
-	}
+		if r.Method != http.MethodPost {
+			utils.ResponseWrapper(w, http.StatusMethodNotAllowed, "invalid request type")
+			return
+		}
+		user := &user.User{}
+		var err error
+		if err = json.NewDecoder(r.Body).Decode(user); err != nil {
+			utils.ResponseWrapper(w, http.StatusBadRequest, err.Error())
+			return
+		}
 
+		user, err = svc.Login(user.Email, user.Password)
+		if err != nil {
+			utils.ResponseWrapper(w, http.StatusBadRequest, err.Error())
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"id":   user.ID,
+			"role": "user",
+		})
+		tokenString, err := token.SignedString([]byte(os.Getenv("jwtsecret")))
+		if err != nil {
+			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
+			return
+		}
+		user.Password = ""
+		w.WriteHeader(http.StatusOK)
+		utils.WrapData(w, map[string]interface{}{
+			"message": "login successful",
+			"token":   tokenString,
+			"user":    *user,
+		})
+	}
 }
 
+func userDetails(svc user.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		claims, err := middleware.ValidateAndGetClaims(r.Context(), "user")
+		if err != nil {
+			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
+			return
+		}
+		user, err := svc.GetUserByID(claims["id"].(float64))
+		if err != nil {
+			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
+			return
+		}
+		w.WriteHeader(http.StatusFound)
+		utils.WrapData(w, map[string]interface{}{
+			"message": "user found",
+			"user":    user,
+		})
+
+	}
+}
+
+//MakeUserHandlers handlers for user related route
 func MakeUserHandlers(r *mux.Router, svc user.Service) {
-	r.HandleFunc("/api/user/register", regsiter(svc))
+	r.HandleFunc("/api/user/register", regsiter(svc)).Methods(http.MethodPost)
+	r.HandleFunc("/api/user/details", userDetails(svc)).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/login", login(svc)).Methods(http.MethodPost)
 }
