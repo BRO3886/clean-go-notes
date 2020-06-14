@@ -31,6 +31,6 @@ func main() {
 		_, _ = w.Write([]byte("Helth"))
 		return
 	})
-	fmt.Println("Serving...")
+	fmt.Println("All ok. Serving...")
 	log.Fatal(http.ListenAndServe("localhost:3000", myRouter))
 }
