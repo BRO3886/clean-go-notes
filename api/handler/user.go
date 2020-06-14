@@ -5,14 +5,16 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/mux"
+
 	"github.com/BRO3886/clean-go-notes/pkg/user"
 	"github.com/BRO3886/clean-go-notes/utils"
 	"github.com/badoux/checkmail"
 	"github.com/dgrijalva/jwt-go"
 )
 
-func regsiter(svc user.Service) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func regsiter(svc user.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			utils.ResponseWrapper(w, http.StatusMethodNotAllowed, "invalid request type")
 			return
@@ -61,13 +63,17 @@ func regsiter(svc user.Service) http.Handler {
 			"token":   tokenString,
 			"user":    *user,
 		})
-	})
+	}
 
 }
 
-func login(svc user.Service) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func login(svc user.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		return
-	})
+	}
 
+}
+
+func MakeUserHandlers(r *mux.Router, svc user.Service) {
+	r.HandleFunc("/api/user/register", regsiter(svc))
 }
