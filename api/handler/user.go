@@ -41,22 +41,21 @@ func regsiter(svc user.Service) http.HandlerFunc {
 		}
 
 		user, err = svc.Register(user)
-
 		if err != nil {
 			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
 			return
 		}
 
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"id":   user.Email,
-			"role": "user",
-		})
+		token := middleware.Token{Email: user.Email, ID: uint64(user.ID)}
 
-		tokenString, err := token.SignedString([]byte(os.Getenv("jwtsecret")))
+		tkString := jwt.NewWithClaims(jwt.SigningMethodHS512, token)
+
+		tokenString, err := tkString.SignedString([]byte(os.Getenv("jwtsecret")))
 		if err != nil {
 			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
 			return
 		}
+
 		user.Password = ""
 		w.WriteHeader(http.StatusCreated)
 		utils.WrapData(w, map[string]interface{}{
@@ -86,16 +85,18 @@ func login(svc user.Service) http.HandlerFunc {
 			utils.ResponseWrapper(w, http.StatusBadRequest, err.Error())
 		}
 
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"id":   user.ID,
-			"role": "user",
-		})
-		tokenString, err := token.SignedString([]byte(os.Getenv("jwtsecret")))
+		token := middleware.Token{Email: user.Email, ID: uint64(user.ID)}
+
+		tkString := jwt.NewWithClaims(jwt.SigningMethodHS512, token)
+
+		tokenString, err := tkString.SignedString([]byte(os.Getenv("jwtsecret")))
 		if err != nil {
 			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
 			return
 		}
+
 		user.Password = ""
+
 		w.WriteHeader(http.StatusOK)
 		utils.WrapData(w, map[string]interface{}{
 			"message": "login successful",
@@ -107,12 +108,10 @@ func login(svc user.Service) http.HandlerFunc {
 
 func userDetails(svc user.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, err := middleware.ValidateAndGetClaims(r.Context(), "user")
-		if err != nil {
-			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
-			return
-		}
-		user, err := svc.GetUserByID(claims["id"].(float64))
+		ctx := r.Context()
+		tk := ctx.Value(middleware.JwtContextKey("token")).(*middleware.Token)
+
+		user, err := svc.GetUserByID(tk.ID)
 		if err != nil {
 			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
 			return
@@ -129,6 +128,6 @@ func userDetails(svc user.Service) http.HandlerFunc {
 //MakeUserHandlers handlers for user related route
 func MakeUserHandlers(r *mux.Router, svc user.Service) {
 	r.HandleFunc("/api/user/register", regsiter(svc)).Methods(http.MethodPost)
-	r.HandleFunc("/api/user/details", userDetails(svc)).Methods(http.MethodGet)
+	r.HandleFunc("/api/user/details", middleware.JwtAuth(userDetails(svc))).Methods(http.MethodGet)
 	r.HandleFunc("/api/user/login", login(svc)).Methods(http.MethodPost)
 }

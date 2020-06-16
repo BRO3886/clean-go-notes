@@ -16,10 +16,10 @@ func NewSqliteRepo(db *gorm.DB) Repository {
 	return &repo{DB: db}
 }
 
-func (r *repo) FindByID(id float64) (*User, error) {
+func (r *repo) FindByID(id uint64) (*User, error) {
 	tx := r.DB.Begin()
 	user := &User{}
-	if err := tx.Where("id=?", id).Find(id).Error; err != nil {
+	if err := tx.Where("id=?", id).Find(user).Error; err != nil {
 		tx.Rollback()
 		return nil, pkg.ErrNotFound
 	}

@@ -13,7 +13,7 @@ import (
 type Service interface {
 	Register(user *User) (*User, error)
 	Login(email, password string) (*User, error)
-	GetUserByID(id float64) (*User, error)
+	GetUserByID(id uint64) (*User, error)
 	GetRepo() Repository
 }
 
@@ -66,10 +66,6 @@ func (s *service) Register(user *User) (*User, error) {
 	return s.repo.Register(user)
 }
 
-func (s *service) GetUserByID(id float64) (*User, error) {
-	return s.repo.FindByID(id)
-}
-
 func (s *service) Login(email, password string) (*User, error) {
 	user := &User{}
 	user, err := s.repo.FindByEmail(email)
@@ -85,4 +81,8 @@ func (s *service) Login(email, password string) (*User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+func (s *service) GetUserByID(id uint64) (*User, error) {
+	return s.repo.FindByID(id)
 }
