@@ -15,7 +15,7 @@ func createNote(svc note.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		note := &note.Note{}
 		if err := json.NewDecoder(r.Body).Decode(note); err != nil {
-			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
+			utils.ResponseWrapper(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
@@ -29,6 +29,7 @@ func createNote(svc note.Service) http.HandlerFunc {
 			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
 			return
 		}
+		utils.JsonifyHeader(w)
 		w.WriteHeader(http.StatusCreated)
 		utils.WrapData(w, map[string]interface{}{
 			"message": "note created",
@@ -39,6 +40,20 @@ func createNote(svc note.Service) http.HandlerFunc {
 
 func fetchAllNotes(svc note.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		ctx := r.Context()
+		tk := ctx.Value(middleware.JwtContextKey("token")).(*middleware.Token)
+
+		notes, err := svc.FetchAllNotes(tk.ID)
+		if err != nil {
+			utils.ResponseWrapper(w, http.StatusBadRequest, err.Error())
+		}
+		utils.JsonifyHeader(w)
+		w.WriteHeader(http.StatusOK)
+		utils.WrapData(w, map[string]interface{}{
+			"message": "notes found",
+			"notes":   notes,
+		})
 
 	}
 }

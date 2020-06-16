@@ -57,6 +57,8 @@ func regsiter(svc user.Service) http.HandlerFunc {
 		}
 
 		user.Password = ""
+
+		utils.JsonifyHeader(w)
 		w.WriteHeader(http.StatusCreated)
 		utils.WrapData(w, map[string]interface{}{
 			"message": "account created",
@@ -97,6 +99,7 @@ func login(svc user.Service) http.HandlerFunc {
 
 		user.Password = ""
 
+		utils.JsonifyHeader(w)
 		w.WriteHeader(http.StatusOK)
 		utils.WrapData(w, map[string]interface{}{
 			"message": "login successful",
@@ -116,6 +119,8 @@ func userDetails(svc user.Service) http.HandlerFunc {
 			utils.ResponseWrapper(w, http.StatusConflict, err.Error())
 			return
 		}
+
+		utils.JsonifyHeader(w)
 		w.WriteHeader(http.StatusFound)
 		utils.WrapData(w, map[string]interface{}{
 			"message": "user found",

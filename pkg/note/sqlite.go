@@ -27,10 +27,12 @@ func (r *repo) CreateNote(note *Note) (*Note, error) {
 func (r *repo) GetAllNotes(userID uint64) (*[]Note, error) {
 	var notes []Note
 	tx := r.DB.Begin()
-	if err := tx.Where("user_id=?", userID).Find(notes).Error; err != nil {
+
+	if err := tx.Where("user_id=?", userID).Find(&notes).Error; err != nil {
 		tx.Rollback()
 		return nil, pkg.ErrDatabase
 	}
+
 	tx.Commit()
 	return &notes, nil
 }

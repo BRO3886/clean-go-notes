@@ -22,7 +22,7 @@ func main() {
 	}
 	defer db.Close()
 	log.Println("connected to db")
-	db.LogMode(true)
+	db.LogMode(false)
 	db.AutoMigrate(&user.User{}, &note.Note{})
 
 	userRepo := user.NewSqliteRepo(db)
