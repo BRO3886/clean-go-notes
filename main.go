@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/BRO3886/clean-go-notes/pkg/note"
+
 	"github.com/BRO3886/clean-go-notes/api/handler"
 	"github.com/BRO3886/clean-go-notes/pkg/user"
 	"github.com/gorilla/mux"
@@ -21,11 +23,19 @@ func main() {
 	defer db.Close()
 	log.Println("connected to db")
 	db.LogMode(true)
-	db.AutoMigrate(&user.User{})
+	db.AutoMigrate(&user.User{}, &note.Note{})
+
 	userRepo := user.NewSqliteRepo(db)
 	userSvc := user.NewService(userRepo)
+
+	noteRepo := note.NewSqliteRepo(db)
+	noteSvc := note.NewService(noteRepo)
+
 	myRouter := mux.NewRouter().StrictSlash(true)
+
 	handler.MakeUserHandlers(myRouter, userSvc)
+	handler.MakeNotesHandler(myRouter, noteSvc)
+
 	myRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("Helth"))
