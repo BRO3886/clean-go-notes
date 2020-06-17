@@ -68,5 +68,5 @@ func main() {
 	log.Println("All ok. Serving on port=", port)
 
 	// log.Fatal(http.ListenAndServe("localhost:3000", myRouter))
-	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s", port), myRouter))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), myRouter))
 }
